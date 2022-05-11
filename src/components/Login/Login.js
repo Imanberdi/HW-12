@@ -1,49 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 
 import Card from '../UI/Card/Card';
 import classes from './Login.module.css';
 import Button from '../UI/Button/Button';
 
 
+const passworReducer = (prevState, action) => {
+  if ((action.type === "INPUT_PASSWORD")) {
+    return {
+      password: action.passwordValue,
+      passwordIsValid: action.passwordValue.trim().length > 6,
+    }
+  }
+  if (action.type === "PASSWORD_BLUR") {
+    return {
+      password: prevState.password,
+      passwordIsValid: prevState.password
+    }
+  }
+  return {
+    password: '',
+    passwordIsValid: false,
+  }
+}
+
+
 const Login = (props) => {
-  const [enteredEmail, setEnteredEmail] = useState('');  // состояние Email  получаем и сохраняем значение этого поля в enteredEmail
-  const [emailIsValid, setEmailIsValid] = useState();  // проверка на правильное заполнение Email поля
-  const [enteredPassword, setEnteredPassword] = useState(''); // состояние Password получаем и сохраняем значение этого поля в enteredPassword  
-  const [passwordIsValid, setPasswordIsValid] = useState(); // проверка на правильное заполнение Password поля
-  const [formIsValid, setFormIsValid] = useState(false); // проверка на правильное заполнение всей формы от которого зависит будет работать кнопка или нет
 
 
-  useEffect(() => {  //  здесь мы положили функцию проверки на правильное заполнение всей формы в useEffect чтобы выполняла проверку в зависимости от изменение состояние enteredEmail, enteredPassword 
-    const timer = setTimeout(() => {  // функция setTimeout будет запускать функцию внутри тела через 3000 мс 
-      setFormIsValid(   // функция проверки на правильное заполнение всей формы
-        enteredEmail.includes('@') && enteredPassword.trim().length > 6
+  const [passwordState, dispatchPassword] = useReducer(passworReducer, {
+    password: "",
+    passwordIsValid: "",
+  })
+
+  const [enteredEmail, setEnteredEmail] = useState('');
+  const [emailIsValid, setEmailIsValid] = useState();
+  const [formIsValid, setFormIsValid] = useState(false);
+
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFormIsValid(
+        enteredEmail.includes('@') && passwordState.password.trim().length > 6
       );
-    }, 3000);
+    }, 1000);
 
     return () => {
-      clearTimeout(timer) // с помощью clearTimeout будет очищаться время в setTimeout для каждого введеного символа или измененног состояние в полях ввода что позволяет не проверять множество раз 
+      clearTimeout(timer)
     }
-  }, [enteredEmail, enteredPassword])
+  }, [enteredEmail, passwordState.password])
 
-  const emailChangeHandler = (event) => {  // функция с помощью получаем значение Email в setEnteredEmail
+  const emailChangeHandler = (event) => {
     setEnteredEmail(event.target.value);
   };
 
-  const passwordChangeHandler = (event) => { // функция с помощью получаем значение Password в setEnteredPassword
-    setEnteredPassword(event.target.value);
+  const passwordChangeHandler = (event) => {
+    dispatchPassword({ type: "INPUT_PASSWORD", passwordValue: event.target.value })
   };
 
-  const validateEmailHandler = () => {   // резкультат проверки enteredEmail на наличие @ и сохраняем на setEmailIsValid
+  const validateEmailHandler = () => {
     setEmailIsValid(enteredEmail.includes('@'));
   };
 
-  const validatePasswordHandler = () => {   // резкультат проверки enteredPassword на наличие более 6 символов и сохраняем на setPasswordIsValid
-    setPasswordIsValid(enteredPassword.trim().length > 6);
+  const validatePasswordHandler = () => {
+    dispatchPassword({ type: "PASSWORD_BLUR" })
   };
 
-  const submitHandler = (event) => {  // при нажатии на кнопку сработает данная функция и запустит функцию onLogin тем самым передав ему результат состояние enteredEmail, enteredPassword где происходит подъем состояние 
+  const submitHandler = (event) => {
     event.preventDefault();
-    props.onLogin(enteredEmail, enteredPassword);
+    props.onLogin(enteredEmail, passwordState.password);
   };
 
   return (
@@ -63,16 +88,16 @@ const Login = (props) => {
           />
         </div>
         <div
-          className={`${classes.control} ${passwordIsValid === false ? classes.invalid : ''
+          className={`${classes.control} ${passwordState.password === false ? classes.invalid : ''
             }`}
         >
           <label htmlFor="password">Password</label>
           <input
             type="password"
             id="password"
-            value={enteredPassword}
-            onChange={passwordChangeHandler}  // передает event функции passwordChangeHandler
-            onBlur={validatePasswordHandler}  // onBlur сработает при проподание фокуса с элемента тем самым запускается функция валидации
+            value={passwordState.password}
+            onChange={passwordChangeHandler}
+            onBlur={validatePasswordHandler}
           />
         </div>
         <div className={classes.actions}>
